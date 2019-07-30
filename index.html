@@ -12,5 +12,76 @@
         <title>Mortgage Simulator</title>
     </head>
     <body>
+        <nav class="navbar navbar-light bg-light">
+            <span class="navbar-brand mb-0 h1">Mortgage Simulator (Ireland Edition)</span>
+        </nav>
+        <div class="container-fluid">
+            <form>
+                <div class="form-row">
+                    <div class="form-group col-12 col-md-4">
+                        <label for="housePriceInput">House Price:</label>
+                        <input type="text" class="form-control" id="housePriceInput" placeholder="350000">
+                    </div>
+                    <div class="form-group col-12 col-md-4">
+                        <label for="mortgagePreapprovedAmountInput">Mortgage pre-approved amount:</label>
+                        <input type="text" class="form-control" id="mortgagePreapprovedAmountInput" placeholder="400000">
+                    </div>
+                    <div class="form-group col-12 col-md-4">
+                        <label for="banksSelect">Bank:</label>
+                        <select class="form-control" id="banksSelect">
+                            <option>AIB</option>
+                            <option>KBC</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-6 col-md-4">
+                        <label for="numYearsFixedRateSelect">Years at fixed rate:</label>
+                        <select class="form-control" id="numYearsFixedRateSelect">
+                            <option>1</option>
+                            <option>2</option>
+                            <option>3</option>
+                            <option>4</option>
+                            <option>5</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-6 col-md-4">
+                        <label for="mortgageYearsSelect">Total number of years for mortgage:</label>
+                        <select class="form-control" id="mortgageYearsSelect">
+                            <option>10</option>
+                            <option>11</option>
+                            <option>12</option>
+                            <option>13</option>
+                            <option>14</option>
+                            <option>15</option>
+                            <option>16</option>
+                            <option>17</option>
+                            <option>18</option>
+                            <option>19</option>
+                            <option>20</option>
+                            <option>21</option>
+                            <option>22</option>
+                            <option>23</option>
+                            <option>24</option>
+                            <option>25</option>
+                            <option>26</option>
+                            <option>27</option>
+                            <option>28</option>
+                            <option>29</option>
+                            <option>30</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-check col-12 col-md-12">
+                        <input class="form-check-input" type="checkbox" value="" id="helpToBuyCheckbox">
+                        <label class="form-check-label" for="helpToBuyCheckbox">
+                            Eligible for Help to Buy Scheme
+                        </label>
+                    </div>
+                </div>
+                <button class="btn btn-primary" type="submit">Calculate</button>
+            </form>
+        </div>
     </body>
 </html>
