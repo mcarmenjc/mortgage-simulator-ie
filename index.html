@@ -79,6 +79,37 @@
                             </label>
                         </div>
                     </div>
+                    <div class="overpayments mt-5">
+                        <div class="form-row mt-5">
+                            <div class="col-6 mx-auto">
+                                <table class="table" id="overpayments">
+                                    <thead>
+                                        <tr>
+                                        <th scope="col" class="w-50">Month #</th>
+                                        <th scope="col" class="w-50">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="form-row mt-5">
+                            <div class="form-group col-12 col-md-4 ml-auto">
+                                <label for="overpaymentMonthInput">Overpayment month:</label>
+                                <input type="text" class="form-control" id="overpaymentMonthInput" placeholder="month number for overpayment">
+                            </div>
+                            <div class="form-group col-12 col-md-4 mr-auto">
+                                <label for="overpaymentAmountInput">Overpayment amount:</label>
+                                <input type="text" class="form-control" id="overpaymentAmountInput" placeholder="overpayment amount to reduce mortgage">
+                            </div>
+                        </div>
+                        <div class="form-row mb-5">
+                            <div class="col text-center">
+                                <button class="btn btn-primary" type="button" id="addOverpaymentButton">Add</button>
+                            </div>
+                        </div>
+                    </div>
                     <div class="form-row mt-5">
                         <div class="col text-center">
                             <button class="btn btn-primary" type="button" id="calculateButton">Calculate</button>

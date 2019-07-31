@@ -15353,6 +15353,8 @@ function showRepaymentsTable(mortgage, houseInfo, fixedYears, totalYears){
 
     $repaymentsTable.append($table);
 }
+let overpayments = {};
+
 function getFormData(){
     let housePrice = parseInt($('#housePriceInput').val());
     let preapprovedAmount = parseInt($('#mortgagePreapprovedAmountInput').val());
@@ -15396,10 +15398,57 @@ function validateForm(){
     return isValid;
 }
 
+function validateOverpayment(){
+    let isValid = true;
+    let $overpaymentMonth = $('#overpaymentMonthInput');
+    let $overpaymentAmount = $('#overpaymentAmountInput');
+
+    removeValidationClass($overpaymentMonth);
+    removeValidationClass($overpaymentAmount);
+
+    if($overpaymentMonth.val() === undefined || $overpaymentMonth.val() === "" || parseInt($overpaymentMonth.val()) <= 0 || overpayments.hasOwnProperty(parseInt($overpaymentMonth.val()))){
+        isValid = false;
+        $overpaymentMonth.addClass('is-invalid');
+    }
+
+    if($overpaymentAmount.val() === undefined || $overpaymentAmount.val() === "" || parseInt($overpaymentAmount.val()) <= 0){
+        isValid = false;
+        $overpaymentAmount.addClass('is-invalid');
+    }
+
+    return isValid;
+}
+
+function addOverpaymentToTable(){
+    let $table = $('#overpayments').find('tbody');
+    let month = $('#overpaymentMonthInput').val();
+    let amount = $('#overpaymentAmountInput').val();
+    $table.append(
+        $('<tr></tr>').append(
+            $('<th scope="row"></th>').text(month)
+        ).append(
+            $('<td></td>').text(amount)
+        )
+    );
+}
+
+function cleanOverpaymentMiniForm(){
+    let $overpaymentMonth = $('#overpaymentMonthInput');
+    let $overpaymentAmount = $('#overpaymentAmountInput');
+    $overpaymentAmount.val('');
+    $overpaymentMonth.val('');
+}
+
+function addOverpayment(){
+    let month = parseInt($('#overpaymentMonthInput').val());
+    let amount = parseInt($('#overpaymentAmountInput').val());
+
+    overpayments[month] = amount;
+}
+
 $(document).ready(function(){
     let $calculateButton = $('#calculateButton');
     $calculateButton.click(function(event){
-        console.log('button clicked');
         event.stopPropagation();
         emptyHouseInfo();
         emptyRepaymentsInfo();
@@ -15414,6 +15463,17 @@ $(document).ready(function(){
             let mortgage = calculateMortgage(houseInfo, banks[bank], fixedRateYears, numYears);
             showRepaymentsInfo(mortgage);
             showRepaymentsTable(mortgage, houseInfo, fixedRateYears, numYears);
+        }
+    });
+
+    let $addButton = $('#addOverpaymentButton');
+    $addButton.click(function(event){
+        event.stopPropagation();
+        let isValid = validateOverpayment();
+        if(isValid){
+            addOverpayment();
+            addOverpaymentToTable();
+            cleanOverpaymentMiniForm();
         }
     });
 });
