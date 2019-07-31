@@ -15032,3 +15032,388 @@ return jQuery;
 
 }));
 //# sourceMappingURL=bootstrap.js.map
+
+function banksInfo(){
+    let banks = {
+        'AIB': {
+            fixed: {
+                1: {
+                    '0-100': {
+                        interest: 3.15,
+                        APRC: 3.22
+                    }
+                },
+                2: {
+                    '0-100': {
+                        interest: 3.15,
+                        APRC: 3.22
+                    }
+                },
+                3: {
+                    '0-100': {
+                        interest: 2.85,
+                        APRC: 3.13
+                    }
+                },
+                4: {
+                    '0-100': {
+                        interest: 2.85,
+                        APRC: 3.1
+                    }
+                },
+                5: {
+                    '0-100': {
+                        interest: 2.85,
+                        APRC: 3.08
+                    }
+                }
+            },
+            variable: {
+                '80-100': {
+                    interest: 3.15,
+                    APRC: 3.22
+                },
+                '50-80': {
+                    interest: 2.95,
+                    APRC: 3.01
+                },
+                '0-50': {
+                    interest: 2.75,
+                    APRC: 2.81
+                }
+            }
+        },
+        'KBC': {
+            fixed: {
+                1: {
+                    '80-100': {
+                        interest: 2.5,
+                        APRC: 3.28
+                    },
+                    '60-80': {
+                        interest: 2.5,
+                        APRC: 3.08
+                    },
+                    '0-60': {
+                        interest: 2.5,
+                        APRC: 3
+                    }
+                },
+                2: {
+                    '80-100': {
+                        interest: 2.6,
+                        APRC: 3.22
+                    },
+                    '60-80': {
+                        interest: 2.55,
+                        APRC: 3
+                    },
+                    '0-60': {
+                        interest: 2.5,
+                        APRC: 2.95
+                    }
+                },
+                3: {
+                    '80-100': {
+                        interest: 2.65,
+                        APRC: 3.17
+                    },
+                    '60-80': {
+                        interest: 2.6,
+                        APRC: 2.97
+                    },
+                    '0-60': {
+                        interest: 2.55,
+                        APRC: 2.92
+                    }
+                },
+                5: {
+                    '80-100': {
+                        interest: 2.8,
+                        APRC: 3.13
+                    },
+                    '60-80': {
+                        interest: 2.65,
+                        APRC: 2.92
+                    },
+                    '0-60': {
+                        interest: 2.6,
+                        APRC: 2.87
+                    }
+                }
+            },
+            variable: {
+                '80-100': {
+                    interest: 3.3,
+                    APRC: 3.37
+                },
+                '50-80': {
+                    interest: 3.05,
+                    APRC: 3.11
+                },
+                '0-50': {
+                    interest: 3,
+                    APRC: 3.06
+                }
+            }
+        }
+    };
+
+    return banks;
+}
+function getMortgageHouseInfo(housePrice, preapprovedAmount, eligibleForHTB){
+    let houseInfo = {
+        'deposit': 0,
+        'mortgageAmount': 0,
+        'LTV': 0,
+        'HTBAmount': 0
+    };
+    houseInfo.deposit = (housePrice*0.1) < (housePrice - preapprovedAmount) ? (housePrice - preapprovedAmount) : (housePrice*0.1);
+    houseInfo.mortgageAmount = housePrice - houseInfo.deposit;
+    houseInfo.LTV = houseInfo.mortgageAmount*100/housePrice;
+    if (eligibleForHTB){
+        houseInfo.HTBAmount = housePrice*0.05 > 20000 ? 20000 : housePrice*0.05;
+    }
+
+    return houseInfo;
+}
+
+function calculateMortgage(houseInfo, bankInfo, fixedYears, totalYears){
+    let mortgage = {
+        'repaymentInfo': {},
+        'totalAmount': 0,
+        'totalInterests': 0
+    };
+
+    mortgage.repaymentInfo = calculateMortgageRepayment(houseInfo, bankInfo.fixed[fixedYears], bankInfo.variable, totalYears);
+    mortgage.totalAmount = mortgage.repaymentInfo.fixed.monthlyRepayment*fixedYears*12 + mortgage.repaymentInfo.variable.monthlyRepayment*(totalYears-fixedYears)*12;
+    mortgage.totalInterests = mortgage.totalAmount - houseInfo.mortgageAmount;
+
+    return mortgage;
+}
+
+function calculateMortgageRepayment(houseInfo, fixedRateInfo, variableRateInfo, totalYears){
+    let repayment = {
+        'fixed': {},
+        'variable': {}
+    };
+
+    repayment.fixed = calculateRepaymentForRate(houseInfo, fixedRateInfo, totalYears);
+    repayment.variable = calculateRepaymentForRate(houseInfo, variableRateInfo, totalYears);
+
+    return repayment;
+}
+
+function calculateRepaymentForRate(houseInfo, rateInfo, totalYears){
+    var repayment = {
+        'rate': 0,
+        'APRC': 0,
+        'monthlyRepayment': 0
+    };
+
+    Object.keys(rateInfo).forEach(function(percentage){
+        let [lower, upper] = percentage.split('-');
+        if (houseInfo.LTV > parseInt(lower) && houseInfo.LTV <= parseInt(upper)){
+            repayment.rate = rateInfo[percentage].interest;
+            repayment.APRC = rateInfo[percentage].APRC;
+            repayment.monthlyRepayment = calculateRepayment(houseInfo.mortgageAmount, rateInfo[percentage].interest, totalYears);
+        }
+    });
+
+    return repayment;
+}
+
+function calculateRepayment(mortgageAmount, rate, totalYears){
+    let monthlyRate = rate/12/100;
+    let numMonths = totalYears*12;
+    let magicOperand = Math.pow((1 + monthlyRate), numMonths);
+    let monthlyRepayment = mortgageAmount * (monthlyRate*magicOperand/(magicOperand - 1));
+    return monthlyRepayment;
+}
+function emptyHouseInfo(){
+    let $houseInfo = $('#mortgageHouseInfo');
+    $houseInfo.empty();
+}
+
+function createListEntry(text, value){
+    let $entry = $('<li class="list-group-item d-flex justify-content-between align-items-center"></li>').text(text).append(
+        $('<span class="badge badge-primary badge-pill ml-4"></span>').text(value)
+    );
+
+    return $entry;
+}
+
+function showHouseInfo(houseInfo){
+    let $houseInfo = $('#mortgageHouseInfo');
+    $houseInfo.append(
+        $('<ul class="list-group"></ul').append(
+            createListEntry('Deposit', houseInfo.deposit)
+        ).append(
+            createListEntry('Mortgage amount', houseInfo.mortgageAmount)
+        ).append(
+            createListEntry('LTV', houseInfo.LTV)
+        ).append(
+            createListEntry('Help to Buy amount', houseInfo.HTBAmount.toFixed(2))
+        )
+    );
+}
+function emptyRepaymentsInfo(){
+    let $repaymentsInfo = $('#repaymentsInfo');
+    $repaymentsInfo.empty();
+}
+
+function showRepaymentInfo(repayment){
+    let $rateInfo = $('<ul class="list-group list-group-horizontal"></ul').append(
+        createListEntry('Rate', repayment.rate)
+    ).append(
+        createListEntry('APRC', repayment.APRC)
+    ).append(
+        createListEntry('Monthly amount', repayment.monthlyRepayment.toFixed(2))
+    );
+
+    return $rateInfo;
+}
+
+function showRepaymentsInfo(mortgage){
+    let $repaymentsInfo = $('#repaymentsInfo');
+    $repaymentsInfo.append(
+        $('<ul class="list-group"></ul').append(
+            $('<li class="list-group-item"></li>').text('Fixed').append(
+                showRepaymentInfo(mortgage.repaymentInfo.fixed)
+            )
+        ).append(
+            $('<li class="list-group-item"></li>').text('Variable').append(
+                showRepaymentInfo(mortgage.repaymentInfo.variable)
+            )
+        ).append(
+            createListEntry('Total amount', mortgage.totalAmount.toFixed(2))
+        ).append(
+            createListEntry('Total interests', mortgage.totalInterests.toFixed(2))
+        )
+    );
+}
+function emptyRepaymentsTable(){
+    let $repaymentsTable = $('#repaymentsTable');
+    $repaymentsTable.empty();
+}
+
+function showRepaymentsTable(mortgage, houseInfo, fixedYears, totalYears){
+    let $repaymentsTable = $('#repaymentsTable');
+    let $data = $('<tbody></tbody>');
+
+    let noInterestRepayment = houseInfo.mortgageAmount/(totalYears*12);
+    let balance = houseInfo.mortgageAmount;
+
+    for (let i = 1; i <= totalYears*12; i++){
+        let $row = $('<tr></tr>').append(
+            $('<th scope="row"></th>').text(i)
+        );
+        let rate = mortgage.repaymentInfo.variable.rate;
+        let repayment = mortgage.repaymentInfo.variable.monthlyRepayment;
+        
+        if(i <= fixedYears*12){
+            rate = mortgage.repaymentInfo.fixed.rate;
+            repayment = mortgage.repaymentInfo.fixed.monthlyRepayment;
+        }
+
+        let interestPaid = repayment - noInterestRepayment;
+        balance = balance - noInterestRepayment;
+
+        $row.append(
+            $('<td></td>').text(rate)
+        );
+        $row.append(
+            $('<td></td>').text(interestPaid.toFixed(2))
+        );
+        $row.append(
+            $('<td></td>').text(repayment.toFixed(2))
+        );
+        $row.append(
+            $('<td></td>').text(balance.toFixed(2))
+        );
+        
+        $data.append($row);
+    }
+
+    let $table = $('<table class="table table-striped"></table>').append(
+        $('<thead class="thead-dark"></thead>').append(
+            $('<tr></tr>').append(
+                $('<th scope="col"></th>').text('#')
+            ).append(
+                $('<th scope="col"></th>').text('Interest rate')
+            ).append(
+                $('<th scope="col"></th>').text('Interest paid')
+            ).append(
+                $('<th scope="col"></th>').text('Installment')
+            ).append(
+                $('<th scope="col"></th>').text('balance')
+            )
+        )
+    ).append($data);
+
+    $repaymentsTable.append($table);
+}
+function getFormData(){
+    let housePrice = parseInt($('#housePriceInput').val());
+    let preapprovedAmount = parseInt($('#mortgagePreapprovedAmountInput').val());
+    let bank = $('#banksSelect').val();
+    let fixedRateYears = parseInt($('#numYearsFixedRateSelect').val());
+    let numYears = parseInt($('#mortgageYearsSelect').val());
+    let isEligibleForHTB = $('#helpToBuyCheckbox').prop('checked');
+
+    return [housePrice, preapprovedAmount, bank, fixedRateYears, numYears, isEligibleForHTB];
+}
+
+function removeValidationClass($elem){
+    $elem.removeClass('is-valid');
+    $elem.removeClass('is-invalid');
+}
+
+function validateForm(){
+    let isValid = true;
+    let $housePrice = $('#housePriceInput');
+    let $preapprovedAmount = $('#mortgagePreapprovedAmountInput');
+
+    removeValidationClass($housePrice);
+    removeValidationClass($preapprovedAmount);
+
+    if($housePrice.val() !== undefined && $housePrice.val() !== "" && parseInt($housePrice.val()) > 0){
+        $housePrice.addClass('is-valid');
+    }
+    else{
+        isValid = false;
+        $housePrice.addClass('is-invalid');
+    }
+
+    if($preapprovedAmount.val() !== undefined && $preapprovedAmount.val() !== "" && parseInt($preapprovedAmount.val()) > 0){
+        $preapprovedAmount.addClass('is-valid');
+    }
+    else{
+        isValid = false;
+        $preapprovedAmount.addClass('is-invalid');
+    }
+
+    return isValid;
+}
+
+$(document).ready(function(){
+    let $calculateButton = $('#calculateButton');
+    $calculateButton.click(function(event){
+        console.log('button clicked');
+        event.stopPropagation();
+        emptyHouseInfo();
+        emptyRepaymentsInfo();
+        emptyRepaymentsTable();
+        let isValid = validateForm();
+        if (isValid){
+            let [housePrice, preapprovedAmount, bank, fixedRateYears, numYears, isEligibleForHTB] = getFormData();
+            let houseInfo = getMortgageHouseInfo(housePrice, preapprovedAmount, isEligibleForHTB);
+            showHouseInfo(houseInfo);
+
+            let banks = banksInfo();
+            let mortgage = calculateMortgage(houseInfo, banks[bank], fixedRateYears, numYears);
+            showRepaymentsInfo(mortgage);
+            showRepaymentsTable(mortgage, houseInfo, fixedRateYears, numYears);
+        }
+    });
+});

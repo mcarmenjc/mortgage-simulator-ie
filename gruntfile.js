@@ -3,7 +3,16 @@ module.exports = function(grunt) {
       pkg: grunt.file.readJSON('package.json'),
       concat: {
           dist: {
-              src: ['node_modules/jquery/dist/jquery.js', 'node_modules/bootstrap/dist/js/bootstrap.js', 'js/**/*.js'],
+              src: [
+                'node_modules/jquery/dist/jquery.js', 
+                'node_modules/bootstrap/dist/js/bootstrap.js', 
+                'js/data/banks-info.js', 
+                'js/mortgage-repayment-calculator.js', 
+                'js/mortgage-house-info.js', 
+                'js/mortgage-repayment-info.js', 
+                'js/mortgage-repayments-table.js', 
+                'js/mortgage-form.js'
+              ],
               dest: 'dist/<%= pkg.name %>.js',
           },
       },
@@ -26,7 +35,7 @@ module.exports = function(grunt) {
     });
   
     grunt.loadNpmTasks('grunt-contrib-concat');
-    grunt.loadNpmTasks('grunt-contrib-uglify');
+    grunt.loadNpmTasks('grunt-contrib-uglify-es');
     grunt.loadNpmTasks('grunt-contrib-sass');
   
     // Default task(s).
