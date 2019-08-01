@@ -23,14 +23,15 @@ function showRepaymentsTable(repayments, mortgageAmount){
             $row.append(
                 $('<td></td>').text(repayInfo.rate)
             ).append(
-                $('<td></td>').text(repayInfo.interestPaid.toFix(2))
+                $('<td></td>').text(repayInfo.interestPaid.toFixed(2))
             ).append(
-                $('<td></td>').text(repayInfo.monthlyRepayment.toFix(2))
+                $('<td></td>').text(repayInfo.monthlyRepayment.toFixed(2))
             ).append(
-                $('<td></td>').text(overpayment.toFix(2))
+                $('<td></td>').text(overpayment.toFixed(2))
             ).append(
-                $('<td></td>').text(balance.toFix(2))
+                $('<td></td>').text(balance.toFixed(2))
             );
+            $data.append($row);
         }
     });
 

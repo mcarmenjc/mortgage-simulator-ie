@@ -26,10 +26,37 @@ function calculateMortgage(houseInfo, bankInfo, fixedYears, totalYears, overpaym
     mortgage.repayments = calculateMortgageRepayment(houseInfo, bankInfo, fixedYears, totalYears, overpayments);
     mortgage.totalAmount = 0;
     mortgage.totalInterests = 0;
+    let balance = houseInfo.mortgageAmount;
+    let lastRepayment = {};
     mortgage.repayments.forEach(function(repay){
-        mortgage.totalAmount += repay.monthlyRepayment * (repay.to - repay.from + 1);
-        mortgage.totalInterests += repay.interestPaid * (repay.to - repay.from + 1);
+        for(let i = repay.from; i <= repay.to; i++){
+            mortgage.totalAmount += repay.monthlyRepayment;
+            mortgage.totalInterests += repay.interestPaid;
+            balance -= (repay.monthlyRepayment - repay.interestPaid);
+            if(i === repay.from){
+                balance -= repay.overpayment;
+            }
+
+            if (balance < (repay.monthlyRepayment - repay.interestPaid)){
+                repay.to = i;
+                mortgage.totalAmount += balance;
+                lastRepayment = {
+                    'rate': repay.rate,
+                    'APRC': repay.APRC,
+                    'monthlyRepayment': balance,
+                    'interestPaid': 0,
+                    'totalAmount': balance,
+                    'from': i+1,
+                    'to': i+1,
+                    'overpayment': 0
+                };
+            }
+        }
     });
+
+    if (balance > 0){
+        mortgage.repayments.push(lastRepayment);
+    }
 
     return mortgage;
 }
@@ -48,7 +75,6 @@ function calculateMortgageRepayment(houseInfo, bankInfo, fixedYears, totalYears,
     variableRepayment.overpayment = 0;
 
     let newMortgageAmount = houseInfo.mortgageAmount;
-    let newLTV = houseInfo.LTV;
 
     Object.keys(overpayments).sort((a, b) => { return a-b }).forEach(function(month){
         if (month > fixedYears*12 + 1){
@@ -56,8 +82,7 @@ function calculateMortgageRepayment(houseInfo, bankInfo, fixedYears, totalYears,
             repayment.push(variableRepayment);
 
             newMortgageAmount = newMortgageAmount - overpayments[month];
-            newLTV = newMortgageAmount*100/houseInfo.totalPrice;
-            variableRepayment = calculateRepaymentForRate(newMortgageAmount, newLTV, bankInfo.variable, totalYears);
+            variableRepayment = calculateRepaymentForRate(newMortgageAmount, houseInfo.LTV, bankInfo.variable, totalYears);
             variableRepayment.overpayment = overpayments[month];
             variableRepayment.from = month;
         }
