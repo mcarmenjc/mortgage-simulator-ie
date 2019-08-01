@@ -15166,7 +15166,8 @@ function getMortgageHouseInfo(housePrice, preapprovedAmount, eligibleForHTB){
         'deposit': 0,
         'mortgageAmount': 0,
         'LTV': 0,
-        'HTBAmount': 0
+        'HTBAmount': 0,
+        'totalPrice': housePrice
     };
     houseInfo.deposit = (housePrice*0.1) < (housePrice - preapprovedAmount) ? (housePrice - preapprovedAmount) : (housePrice*0.1);
     houseInfo.mortgageAmount = housePrice - houseInfo.deposit;
@@ -15178,45 +15179,75 @@ function getMortgageHouseInfo(housePrice, preapprovedAmount, eligibleForHTB){
     return houseInfo;
 }
 
-function calculateMortgage(houseInfo, bankInfo, fixedYears, totalYears){
+function calculateMortgage(houseInfo, bankInfo, fixedYears, totalYears, overpayments){
     let mortgage = {
-        'repaymentInfo': {},
+        'repayments': [],
         'totalAmount': 0,
         'totalInterests': 0
     };
 
-    mortgage.repaymentInfo = calculateMortgageRepayment(houseInfo, bankInfo.fixed[fixedYears], bankInfo.variable, totalYears);
-    mortgage.totalAmount = mortgage.repaymentInfo.fixed.monthlyRepayment*fixedYears*12 + mortgage.repaymentInfo.variable.monthlyRepayment*(totalYears-fixedYears)*12;
-    mortgage.totalInterests = mortgage.totalAmount - houseInfo.mortgageAmount;
+    mortgage.repayments = calculateMortgageRepayment(houseInfo, bankInfo, fixedYears, totalYears, overpayments);
+    mortgage.totalAmount = 0;
+    mortgage.totalInterests = 0;
+    mortgage.repayments.forEach(function(repay){
+        mortgage.totalAmount += repay.monthlyRepayment * (repay.to - repay.from + 1);
+        mortgage.totalInterests += repay.interestPaid * (repay.to - repay.from + 1);
+    });
 
     return mortgage;
 }
 
-function calculateMortgageRepayment(houseInfo, fixedRateInfo, variableRateInfo, totalYears){
-    let repayment = {
-        'fixed': {},
-        'variable': {}
-    };
+function calculateMortgageRepayment(houseInfo, bankInfo, fixedYears, totalYears, overpayments){
+    let repayment = [];
 
-    repayment.fixed = calculateRepaymentForRate(houseInfo, fixedRateInfo, totalYears);
-    repayment.variable = calculateRepaymentForRate(houseInfo, variableRateInfo, totalYears);
+    let fixedRepayment = calculateRepaymentForRate(houseInfo.mortgageAmount, houseInfo.LTV, bankInfo.fixed[fixedYears], totalYears);
+    fixedRepayment.from = 1;
+    fixedRepayment.to = fixedYears*12;
+    fixedRepayment.overpayment = 0;
+    repayment.push(fixedRepayment);
+    
+    let variableRepayment = calculateRepaymentForRate(houseInfo.mortgageAmount, houseInfo.LTV, bankInfo.variable, totalYears);
+    variableRepayment.from = fixedYears*12 + 1;
+    variableRepayment.overpayment = 0;
+
+    let newMortgageAmount = houseInfo.mortgageAmount;
+    let newLTV = houseInfo.LTV;
+
+    Object.keys(overpayments).sort((a, b) => { return a-b }).forEach(function(month){
+        if (month > fixedYears*12 + 1){
+            variableRepayment.to = month - 1;
+            repayment.push(variableRepayment);
+
+            newMortgageAmount = newMortgageAmount - overpayments[month];
+            newLTV = newMortgageAmount*100/houseInfo.totalPrice;
+            variableRepayment = calculateRepaymentForRate(newMortgageAmount, newLTV, bankInfo.variable, totalYears);
+            variableRepayment.overpayment = overpayments[month];
+            variableRepayment.from = month;
+        }
+    });
+
+    variableRepayment.to = totalYears*12;
+    repayment.push(variableRepayment);
 
     return repayment;
 }
 
-function calculateRepaymentForRate(houseInfo, rateInfo, totalYears){
+function calculateRepaymentForRate(mortgageAmount, LTV, rateInfo, totalYears){
     var repayment = {
         'rate': 0,
         'APRC': 0,
-        'monthlyRepayment': 0
+        'monthlyRepayment': 0,
+        'interestPaid': 0,
+        'totalAmount': mortgageAmount
     };
 
     Object.keys(rateInfo).forEach(function(percentage){
         let [lower, upper] = percentage.split('-');
-        if (houseInfo.LTV > parseInt(lower) && houseInfo.LTV <= parseInt(upper)){
+        if (LTV > parseInt(lower) && LTV <= parseInt(upper)){
             repayment.rate = rateInfo[percentage].interest;
             repayment.APRC = rateInfo[percentage].APRC;
-            repayment.monthlyRepayment = calculateRepayment(houseInfo.mortgageAmount, rateInfo[percentage].interest, totalYears);
+            repayment.monthlyRepayment = calculateRepayment(mortgageAmount, rateInfo[percentage].interest, totalYears);
+            repayment.interestPaid = repayment.monthlyRepayment - (mortgageAmount/totalYears/12);
         }
     });
 
@@ -15262,33 +15293,13 @@ function emptyRepaymentsInfo(){
     $repaymentsInfo.empty();
 }
 
-function showRepaymentInfo(repayment){
-    let $rateInfo = $('<ul class="list-group list-group-horizontal"></ul').append(
-        createListEntry('Rate', repayment.rate)
-    ).append(
-        createListEntry('APRC', repayment.APRC)
-    ).append(
-        createListEntry('Monthly amount', repayment.monthlyRepayment.toFixed(2))
-    );
-
-    return $rateInfo;
-}
-
 function showRepaymentsInfo(mortgage){
     let $repaymentsInfo = $('#repaymentsInfo');
     $repaymentsInfo.append(
         $('<ul class="list-group"></ul').append(
-            $('<li class="list-group-item"></li>').text('Fixed').append(
-                showRepaymentInfo(mortgage.repaymentInfo.fixed)
-            )
+            createListEntry('Total amount to pay', mortgage.totalAmount.toFixed(2))
         ).append(
-            $('<li class="list-group-item"></li>').text('Variable').append(
-                showRepaymentInfo(mortgage.repaymentInfo.variable)
-            )
-        ).append(
-            createListEntry('Total amount', mortgage.totalAmount.toFixed(2))
-        ).append(
-            createListEntry('Total interests', mortgage.totalInterests.toFixed(2))
+            createListEntry('Total interests to pay', mortgage.totalInterests.toFixed(2))
         )
     );
 }
@@ -15297,43 +15308,36 @@ function emptyRepaymentsTable(){
     $repaymentsTable.empty();
 }
 
-function showRepaymentsTable(mortgage, houseInfo, fixedYears, totalYears){
+function showRepaymentsTable(repayments, mortgageAmount){
     let $repaymentsTable = $('#repaymentsTable');
     let $data = $('<tbody></tbody>');
+    let balance = mortgageAmount;
 
-    let noInterestRepayment = houseInfo.mortgageAmount/(totalYears*12);
-    let balance = houseInfo.mortgageAmount;
+    repayments.forEach((repayInfo) => {
+        for(let i = repayInfo.from; i <= repayInfo.to; i++){
+            let $row = $('<tr></tr>').append(
+                $('<th scope="row"></th>').text(i)
+            );
 
-    for (let i = 1; i <= totalYears*12; i++){
-        let $row = $('<tr></tr>').append(
-            $('<th scope="row"></th>').text(i)
-        );
-        let rate = mortgage.repaymentInfo.variable.rate;
-        let repayment = mortgage.repaymentInfo.variable.monthlyRepayment;
-        
-        if(i <= fixedYears*12){
-            rate = mortgage.repaymentInfo.fixed.rate;
-            repayment = mortgage.repaymentInfo.fixed.monthlyRepayment;
+            let overpayment = 0;
+            if(i === repayInfo.from){
+                overpayment = repayInfo.overpayment;
+            }
+            balance = balance - (repayInfo.monthlyRepayment - repayInfo.interestPaid) - overpayment;
+
+            $row.append(
+                $('<td></td>').text(repayInfo.rate)
+            ).append(
+                $('<td></td>').text(repayInfo.interestPaid.toFix(2))
+            ).append(
+                $('<td></td>').text(repayInfo.monthlyRepayment.toFix(2))
+            ).append(
+                $('<td></td>').text(overpayment.toFix(2))
+            ).append(
+                $('<td></td>').text(balance.toFix(2))
+            );
         }
-
-        let interestPaid = repayment - noInterestRepayment;
-        balance = balance - noInterestRepayment;
-
-        $row.append(
-            $('<td></td>').text(rate)
-        );
-        $row.append(
-            $('<td></td>').text(interestPaid.toFixed(2))
-        );
-        $row.append(
-            $('<td></td>').text(repayment.toFixed(2))
-        );
-        $row.append(
-            $('<td></td>').text(balance.toFixed(2))
-        );
-        
-        $data.append($row);
-    }
+    });
 
     let $table = $('<table class="table table-striped"></table>').append(
         $('<thead class="thead-dark"></thead>').append(
@@ -15345,6 +15349,8 @@ function showRepaymentsTable(mortgage, houseInfo, fixedYears, totalYears){
                 $('<th scope="col"></th>').text('Interest paid')
             ).append(
                 $('<th scope="col"></th>').text('Installment')
+            ).append(
+                $('<th scope="col"></th>').text('Overpayment')
             ).append(
                 $('<th scope="col"></th>').text('balance')
             )
@@ -15460,7 +15466,7 @@ $(document).ready(function(){
             showHouseInfo(houseInfo);
 
             let banks = banksInfo();
-            let mortgage = calculateMortgage(houseInfo, banks[bank], fixedRateYears, numYears);
+            let mortgage = calculateMortgage(houseInfo, banks[bank], fixedRateYears, numYears, overpayments);
             showRepaymentsInfo(mortgage);
             showRepaymentsTable(mortgage, houseInfo, fixedRateYears, numYears);
         }

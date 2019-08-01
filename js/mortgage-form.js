@@ -105,7 +105,7 @@ $(document).ready(function(){
             showHouseInfo(houseInfo);
 
             let banks = banksInfo();
-            let mortgage = calculateMortgage(houseInfo, banks[bank], fixedRateYears, numYears);
+            let mortgage = calculateMortgage(houseInfo, banks[bank], fixedRateYears, numYears, overpayments);
             showRepaymentsInfo(mortgage);
             showRepaymentsTable(mortgage, houseInfo, fixedRateYears, numYears);
         }
